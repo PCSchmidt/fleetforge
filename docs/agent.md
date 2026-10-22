@@ -47,7 +47,7 @@ Resuming is what makes a bad link workable: at a 30% drop rate every device fini
 
 ```
 pip install numpy cryptography hypothesis pytest
-pytest                                   # 125 tests, about 12 s
+pytest                                   # 124 tests, about 12 s
 python scripts/run_agent_eval.py         # about a minute
 python scripts/mutation_agent.py         # about 4 minutes
 ```
