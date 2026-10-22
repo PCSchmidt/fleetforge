@@ -1,0 +1,19 @@
+killed    state replaced without syncing the temp file
+killed    state overwritten in place instead of renamed
+killed    update written into the running slot
+killed    full verification before staging skipped
+killed    header verification skipped
+killed    boot does not count tries
+killed    rolled-back model not remembered
+killed    rejected hashes not consulted
+killed    unhealthy model promoted
+killed    chunk data not synced before the journal line
+killed    journal chunk hashes not checked on resume
+killed    journal not tied to the manifest
+killed    pending slot not verified at boot
+killed    update runs while a trial is pending
+killed    already-installed model re-downloaded
+killed    active slot not verified at boot
+killed    floor never raised on promotion
+
+17/17 mutants killed

@@ -1,0 +1,25 @@
+Model 24676 bytes in chunks of 4096; trial tries allowed 3.
+
+Power-cut sweeps. A cut at every storage operation of a full update, under 4 post-cut patterns (unsynced writes: all lost, all kept,
+first half kept, every other one kept); invariants are checked on the store right after each cut, then the device is driven to the end.
+Double cuts add a second cut at every operation of the recovery run.
+
+  good model, confirmed healthy: 52 operations; single cuts 208 runs, 0 failures; double cuts 6090 runs, 0 failures
+  bad model, found unhealthy: 52 operations; single cuts 208 runs, 0 failures; double cuts 6090 runs, 0 failures
+  model that crashes before it can be confirmed: 58 operations; single cuts 232 runs, 0 failures; double cuts 7410 runs, 0 failures
+
+  total 20238 cut runs, 0 failures
+
+Control: an updater that overwrites the running model in place, 12 operations x 4 patterns = 48 runs: 34 leave the device with no valid model (71%).
+
+Lossy link. 128 KiB model, 200 devices per row; a request is dropped with the given probability, short reads 20%, one corrupted byte per 100 chunks.
+An update call gives up after 6 failed requests and the next call resumes (or, in the right column, starts over). Up to 60 calls.
+
+   drop |                 with resume                  |                without resume               
+        |   done  calls  bytes sent / size verify fails |   done  calls  bytes sent / size verify fails
+    0.0 |   100%    1.6               1.53         0.53 |   100%    1.6               1.53         0.53
+    0.1 |   100%    1.8               1.62         0.61 |   100%    1.7               1.71         0.56
+    0.3 |   100%    4.0               1.44         0.42 |    45%   26.0              20.02         0.17
+    0.5 |   100%    8.5               1.42         0.39 |     0%    0.0              11.48         0.00
+
+Total time 68 s

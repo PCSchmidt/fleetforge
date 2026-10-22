@@ -265,9 +265,11 @@ class Device:
         return OK
 
     # --- artifacts ---
-    def verify(self, b: Bundle, now: int) -> Result:
+    def verify_header(self, manifest: bytes, signature: bytes, now: int) -> Result:
+        """Everything that can be decided from the manifest and signature alone, so a device can refuse an update
+        before downloading the model."""
         try:
-            m = parse_manifest(b.manifest)
+            m = parse_manifest(manifest)
         except ParseError as e:
             return Result(False, "manifest_malformed", str(e))
         key = self.keys.get(m.key_id)
@@ -277,7 +279,7 @@ class Device:
         if now > key_not_after:
             return Result(False, "key_expired", m.key_id)
         try:
-            pub.verify(b.signature, MANIFEST_DOMAIN + b.manifest)
+            pub.verify(signature, MANIFEST_DOMAIN + manifest)
         except InvalidSignature:
             return Result(False, "bad_signature")
         if m.target != self.target:
@@ -293,6 +295,11 @@ class Device:
             return Result(False, "not_yet_valid")
         if m.min_agent > self.agent_version:
             return Result(False, "agent_too_old", f"needs {m.min_agent}, have {self.agent_version}")
+        return OK
+
+    def verify_body(self, b: Bundle) -> Result:
+        """Model size and hash and attachment hashes against an already-verified manifest."""
+        m = parse_manifest(b.manifest)
         if len(b.model) != m.model_size:
             return Result(False, "model_size", f"{len(b.model)} != {m.model_size}")
         if sha256(b.model) != m.model_sha256:
@@ -302,6 +309,26 @@ class Device:
         if sha256(b.sbom) != m.sbom_sha256:
             return Result(False, "attachment_hash", "sbom")
         return OK
+
+    def verify(self, b: Bundle, now: int) -> Result:
+        r = self.verify_header(b.manifest, b.signature, now)
+        return r if not r.ok else self.verify_body(b)
+
+    def verify_installed(self, b: Bundle) -> Result:
+        """Integrity of a bundle already on the device: key, signature and hashes, but not the validity window, the
+        floor or the target, which only matter when deciding to accept something new."""
+        try:
+            m = parse_manifest(b.manifest)
+        except ParseError as e:
+            return Result(False, "manifest_malformed", str(e))
+        key = self.keys.get(m.key_id)
+        if key is None:
+            return Result(False, "unknown_key", m.key_id)
+        try:
+            key[0].verify(b.signature, MANIFEST_DOMAIN + b.manifest)
+        except InvalidSignature:
+            return Result(False, "bad_signature")
+        return self.verify_body(b)
 
     def commit(self, b: Bundle) -> None:
         """Record an installed artifact. Call only after `verify` accepted it and the install succeeded."""
