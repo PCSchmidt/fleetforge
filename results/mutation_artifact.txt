@@ -1,0 +1,28 @@
+killed    signature check skipped
+killed    manifest domain separation dropped
+killed    keyset signature check skipped
+killed    keyset domain separation dropped
+killed    rollback below floor allowed
+killed    same seq with a different model allowed
+killed    same seq reinstall refused
+killed    target not checked
+killed    model hash not checked
+killed    model size not checked
+killed    model card hash not checked
+killed    sbom hash not checked
+killed    expiry off by one
+killed    expiry not checked
+killed    future manifests allowed
+killed    skew boundary off by one
+killed    key expiry not checked
+killed    agent version not checked
+killed    keyset rollback allowed
+killed    duplicate JSON keys allowed
+killed    unknown fields allowed
+killed    floor can be lowered
+killed    booleans accepted as integers
+killed    manifest size cap removed
+killed    not_after before created allowed
+killed    name pattern loosened
+
+26/26 mutants killed

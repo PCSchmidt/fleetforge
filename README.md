@@ -2,7 +2,7 @@
 
 Edge MLOps: ship a model to many devices as a signed artifact, roll it out by canary, and decide on the device whether to promote or roll back.
 
-**Status:** milestone 0.1 only, in simulation: a sequential shadow-evaluation test (when is it justified to promote a candidate model that runs beside production, looking at the data as it arrives, when neighbouring frames are correlated?). No artifact signing, no device agent, no control plane, no real devices or models yet. See [docs/scope.md](docs/scope.md) for the plan and [docs/sequential-test.md](docs/sequential-test.md) for the results and their limits.
+**Status:** milestones 0.1 and 0.2, no devices. 0.2 is a signed model artifact format with a device-side verifier (Ed25519, pinned root key and keyset, rollback floor, target, validity window), tested against every single-bit tamper and a list of replay, mix-and-match and parser attacks, with all 26 injected faults caught ([docs/artifact.md](docs/artifact.md)). 0.1: a sequential shadow-evaluation test (when is it justified to promote a candidate model that runs beside production, looking at the data as it arrives, when neighbouring frames are correlated?). No artifact signing, no device agent, no control plane, no real devices or models yet. See [docs/scope.md](docs/scope.md) for the plan and [docs/sequential-test.md](docs/sequential-test.md) for the results and their limits.
 
 ## Headline (simulated streams, not real models)
 
@@ -14,7 +14,7 @@ Edge MLOps: ship a model to many devices as a signed artifact, roll it out by ca
 ## Run
 
 ```
-pip install numpy pytest
+pip install numpy cryptography hypothesis pytest
 pytest
 python scripts/run_seqtest.py
 ```

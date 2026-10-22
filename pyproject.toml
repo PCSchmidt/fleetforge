@@ -3,10 +3,10 @@ name = "fleetforge"
 version = "0.1.0"
 description = "Edge MLOps: sequential shadow evaluation for promoting a model on a device fleet"
 requires-python = ">=3.11"
-dependencies = ["numpy"]
+dependencies = ["numpy", "cryptography"]
 
 [project.optional-dependencies]
-dev = ["pytest"]
+dev = ["pytest", "hypothesis"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
