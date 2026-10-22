@@ -1,0 +1,13 @@
+[project]
+name = "fleetforge"
+version = "0.1.0"
+description = "Edge MLOps: sequential shadow evaluation for promoting a model on a device fleet"
+requires-python = ">=3.11"
+dependencies = ["numpy"]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

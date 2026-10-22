@@ -1,0 +1,422 @@
+{
+ "E1 independent frames": {
+  "fixed z-test, frames independent (1 look)": {
+   "promote": 57,
+   "reject": 44
+  },
+  "peek every 100 frames, z-test": {
+   "promote": 498,
+   "reject": 493
+  },
+  "iid mixture sequence": {
+   "promote": 6,
+   "reject": 13
+  },
+  "fixed z-test on blocks B=250 (1 look)": {
+   "promote": 56,
+   "reject": 46
+  },
+  "block betting B=250": {
+   "promote": 22,
+   "reject": 30
+  },
+  "block mixture B=250": {
+   "promote": 4,
+   "reject": 7
+  },
+  "fixed z-test on blocks B=1000 (1 look)": {
+   "promote": 71,
+   "reject": 57
+  },
+  "block betting B=1000": {
+   "promote": 0,
+   "reject": 0
+  },
+  "block mixture B=1000": {
+   "promote": 0,
+   "reject": 0
+  },
+  "fixed z-test on blocks B=4000 (1 look)": {
+   "promote": 89,
+   "reject": 72
+  },
+  "block betting B=4000": {
+   "promote": 0,
+   "reject": 0
+  },
+  "block mixture B=4000": {
+   "promote": 0,
+   "reject": 0
+  }
+ },
+ "E1 scene variation sd 0.03, correlation time 100 frames": {
+  "fixed z-test, frames independent (1 look)": {
+   "promote": 242,
+   "reject": 235
+  },
+  "peek every 100 frames, z-test": {
+   "promote": 951,
+   "reject": 909
+  },
+  "iid mixture sequence": {
+   "promote": 227,
+   "reject": 225
+  },
+  "fixed z-test on blocks B=250 (1 look)": {
+   "promote": 81,
+   "reject": 92
+  },
+  "block betting B=250": {
+   "promote": 68,
+   "reject": 68
+  },
+  "block mixture B=250": {
+   "promote": 37,
+   "reject": 37
+  },
+  "fixed z-test on blocks B=1000 (1 look)": {
+   "promote": 63,
+   "reject": 70
+  },
+  "block betting B=1000": {
+   "promote": 6,
+   "reject": 7
+  },
+  "block mixture B=1000": {
+   "promote": 3,
+   "reject": 6
+  },
+  "fixed z-test on blocks B=4000 (1 look)": {
+   "promote": 84,
+   "reject": 89
+  },
+  "block betting B=4000": {
+   "promote": 0,
+   "reject": 0
+  },
+  "block mixture B=4000": {
+   "promote": 0,
+   "reject": 0
+  }
+ },
+ "E1 scene variation sd 0.03, correlation time 500 frames": {
+  "fixed z-test, frames independent (1 look)": {
+   "promote": 555,
+   "reject": 521
+  },
+  "peek every 100 frames, z-test": {
+   "promote": 1004,
+   "reject": 992
+  },
+  "iid mixture sequence": {
+   "promote": 807,
+   "reject": 787
+  },
+  "fixed z-test on blocks B=250 (1 look)": {
+   "promote": 294,
+   "reject": 308
+  },
+  "block betting B=250": {
+   "promote": 420,
+   "reject": 430
+  },
+  "block mixture B=250": {
+   "promote": 351,
+   "reject": 358
+  },
+  "fixed z-test on blocks B=1000 (1 look)": {
+   "promote": 129,
+   "reject": 146
+  },
+  "block betting B=1000": {
+   "promote": 62,
+   "reject": 66
+  },
+  "block mixture B=1000": {
+   "promote": 63,
+   "reject": 64
+  },
+  "fixed z-test on blocks B=4000 (1 look)": {
+   "promote": 90,
+   "reject": 103
+  },
+  "block betting B=4000": {
+   "promote": 0,
+   "reject": 0
+  },
+  "block mixture B=4000": {
+   "promote": 2,
+   "reject": 6
+  }
+ },
+ "E1 scene variation sd 0.03, correlation time 2000 frames": {
+  "fixed z-test, frames independent (1 look)": {
+   "promote": 750,
+   "reject": 727
+  },
+  "peek every 100 frames, z-test": {
+   "promote": 1015,
+   "reject": 984
+  },
+  "iid mixture sequence": {
+   "promote": 949,
+   "reject": 973
+  },
+  "fixed z-test on blocks B=250 (1 look)": {
+   "promote": 582,
+   "reject": 562
+  },
+  "block betting B=250": {
+   "promote": 882,
+   "reject": 856
+  },
+  "block mixture B=250": {
+   "promote": 836,
+   "reject": 810
+  },
+  "fixed z-test on blocks B=1000 (1 look)": {
+   "promote": 367,
+   "reject": 370
+  },
+  "block betting B=1000": {
+   "promote": 381,
+   "reject": 382
+  },
+  "block mixture B=1000": {
+   "promote": 388,
+   "reject": 390
+  },
+  "fixed z-test on blocks B=4000 (1 look)": {
+   "promote": 177,
+   "reject": 188
+  },
+  "block betting B=4000": {
+   "promote": 1,
+   "reject": 0
+  },
+  "block mixture B=4000": {
+   "promote": 33,
+   "reject": 41
+  }
+ },
+ "E2": {
+  "fixed z-test, frames independent (1 look)": {
+   "promote": 12,
+   "reject": 1828
+  },
+  "peek every 100 frames, z-test": {
+   "promote": 585,
+   "reject": 1414
+  },
+  "iid mixture sequence": {
+   "promote": 142,
+   "reject": 1776
+  },
+  "fixed z-test on blocks B=250 (1 look)": {
+   "promote": 2,
+   "reject": 1686
+  },
+  "block betting B=250": {
+   "promote": 62,
+   "reject": 1531
+  },
+  "block mixture B=250": {
+   "promote": 26,
+   "reject": 1537
+  },
+  "fixed z-test on blocks B=1000 (1 look)": {
+   "promote": 0,
+   "reject": 1388
+  },
+  "block betting B=1000": {
+   "promote": 1,
+   "reject": 946
+  },
+  "block mixture B=1000": {
+   "promote": 1,
+   "reject": 887
+  },
+  "fixed z-test on blocks B=4000 (1 look)": {
+   "promote": 0,
+   "reject": 1175
+  },
+  "block betting B=4000": {
+   "promote": 0,
+   "reject": 0
+  },
+  "block mixture B=4000": {
+   "promote": 0,
+   "reject": 325
+  }
+ },
+ "E3 delta=0.005": {
+  "fixed z-test, frames independent (1 look)": {
+   "promote": 1575,
+   "median": 40000.0
+  },
+  "peek every 100 frames, z-test": {
+   "promote": 1461,
+   "median": 1100.0
+  },
+  "iid mixture sequence": {
+   "promote": 1338,
+   "median": 15750.0
+  },
+  "fixed z-test on blocks B=1000 (1 look)": {
+   "promote": 1026,
+   "median": 40000.0
+  },
+  "block betting B=1000": {
+   "promote": 338,
+   "median": 32000.0
+  },
+  "block mixture B=1000": {
+   "promote": 278,
+   "median": 29000.0
+  },
+  "fixed z-test on blocks B=1000, stream cut at 10000": {
+   "promote": 437,
+   "median": 10000.0
+  },
+  "fixed z-test on blocks B=1000, stream cut at 20000": {
+   "promote": 647,
+   "median": 20000.0
+  }
+ },
+ "E3 delta=0.01": {
+  "fixed z-test, frames independent (1 look)": {
+   "promote": 1993,
+   "median": 40000.0
+  },
+  "peek every 100 frames, z-test": {
+   "promote": 1688,
+   "median": 800.0
+  },
+  "iid mixture sequence": {
+   "promote": 1976,
+   "median": 9300.0
+  },
+  "fixed z-test on blocks B=1000 (1 look)": {
+   "promote": 1952,
+   "median": 40000.0
+  },
+  "block betting B=1000": {
+   "promote": 1598,
+   "median": 26000.0
+  },
+  "block mixture B=1000": {
+   "promote": 1511,
+   "median": 25000.0
+  },
+  "fixed z-test on blocks B=1000, stream cut at 10000": {
+   "promote": 1080,
+   "median": 10000.0
+  },
+  "fixed z-test on blocks B=1000, stream cut at 20000": {
+   "promote": 1582,
+   "median": 20000.0
+  }
+ },
+ "E3 delta=0.02": {
+  "fixed z-test, frames independent (1 look)": {
+   "promote": 2000,
+   "median": 40000.0
+  },
+  "peek every 100 frames, z-test": {
+   "promote": 1871,
+   "median": 500.0
+  },
+  "iid mixture sequence": {
+   "promote": 2000,
+   "median": 4000.0
+  },
+  "fixed z-test on blocks B=1000 (1 look)": {
+   "promote": 2000,
+   "median": 40000.0
+  },
+  "block betting B=1000": {
+   "promote": 2000,
+   "median": 15000.0
+  },
+  "block mixture B=1000": {
+   "promote": 2000,
+   "median": 12000.0
+  },
+  "fixed z-test on blocks B=1000, stream cut at 10000": {
+   "promote": 1919,
+   "median": 10000.0
+  },
+  "fixed z-test on blocks B=1000, stream cut at 20000": {
+   "promote": 1999,
+   "median": 20000.0
+  }
+ },
+ "E3 delta=0.04": {
+  "fixed z-test, frames independent (1 look)": {
+   "promote": 2000,
+   "median": 40000.0
+  },
+  "peek every 100 frames, z-test": {
+   "promote": 1980,
+   "median": 200.0
+  },
+  "iid mixture sequence": {
+   "promote": 2000,
+   "median": 1800.0
+  },
+  "fixed z-test on blocks B=1000 (1 look)": {
+   "promote": 2000,
+   "median": 40000.0
+  },
+  "block betting B=1000": {
+   "promote": 2000,
+   "median": 9000.0
+  },
+  "block mixture B=1000": {
+   "promote": 2000,
+   "median": 10000.0
+  },
+  "fixed z-test on blocks B=1000, stream cut at 10000": {
+   "promote": 2000,
+   "median": 10000.0
+  },
+  "fixed z-test on blocks B=1000, stream cut at 20000": {
+   "promote": 2000,
+   "median": 20000.0
+  }
+ },
+ "E4": {
+  "fixed z-test, frames independent (1 look)": {
+   "reject": 2000,
+   "median": 40000.0
+  },
+  "peek every 100 frames, z-test": {
+   "reject": 1942,
+   "median": 300.0
+  },
+  "iid mixture sequence": {
+   "reject": 2000,
+   "median": 2600.0
+  },
+  "fixed z-test on blocks B=1000 (1 look)": {
+   "reject": 2000,
+   "median": 40000.0
+  },
+  "block betting B=1000": {
+   "reject": 2000,
+   "median": 11000.0
+  },
+  "block mixture B=1000": {
+   "reject": 2000,
+   "median": 10000.0
+  },
+  "fixed z-test on blocks B=1000, stream cut at 10000": {
+   "reject": 2000,
+   "median": 10000.0
+  },
+  "fixed z-test on blocks B=1000, stream cut at 20000": {
+   "reject": 2000,
+   "median": 20000.0
+  }
+ }
+}
