@@ -1,0 +1,16 @@
+pair                                                      new size lzma whole |       chunks 4 KiB       |      chunks 64 KiB      
+                                                                              | wire bytes       reused | wire bytes       reused
+trained checkpoint, seed 1 -> seed 2 (retrained)           5486810        88% |         92.2%   37/1340  |         88.2%    0/84   
+ONNX, min-max -> entropy calibration (same weights)       10672449        84% |          0.8% 2605/2606  |          0.1%  162/163  
+ONNX, FP16 build -> INT8 build (same weights)             10672449        84% |          0.8% 2605/2606  |          0.1%  162/163  
+TensorRT INT8 engine, min-max -> entropy                   5117132        55% |         65.3%    3/1250  |         58.9%    0/79   
+TensorRT engine, FP16 -> INT8                              5148988        53% |         63.6%    0/1258  |         57.3%    0/79   
+
+(wire bytes include the manifest, signature, chunk index and attachments; percentages are of the new file's size)
+
+One pair (TensorRT INT8 engine, min-max -> entropy, 4 KiB chunks) on a lossy link, 10 devices each:
+  drop rate  corrupted chunks   done  calls  wire bytes / size
+        0.0              0.00    10/10    1.0               0.65
+        0.0              0.02    10/10    1.5               0.74
+        0.3              0.02    10/10    1.6               0.67
+        0.5              0.02    10/10   18.5               0.79

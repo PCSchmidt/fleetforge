@@ -26,7 +26,7 @@ from dataclasses import dataclass, field
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
 
-MANIFEST_FORMAT = "fleetforge-manifest/1"
+MANIFEST_FORMAT = "fleetforge-manifest/2"
 KEYSET_FORMAT = "fleetforge-keyset/1"
 MANIFEST_DOMAIN = b"fleetforge/manifest/v1\x00"
 KEYSET_DOMAIN = b"fleetforge/keyset/v1\x00"
@@ -37,6 +37,8 @@ NAME_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
 KEYID_RE = re.compile(r"^[A-Za-z0-9._-]{1,32}$")
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
 MAX_INT = 2**53
+DEFAULT_CHUNK = 4096
+MIN_CHUNK, MAX_CHUNK = 512, 16 * 1024 * 1024
 
 
 class ParseError(ValueError):
@@ -124,18 +126,21 @@ class Manifest:
     metrics: dict = field(default_factory=dict)
     model_card_sha256: str = ""
     sbom_sha256: str = ""
+    chunk_size: int = DEFAULT_CHUNK
+    index_sha256: str = ""
 
 
 def parse_manifest(raw: bytes) -> Manifest:
     if len(raw) > MAX_MANIFEST:
         raise ParseError("manifest too large")
     d = _loads(raw)
-    keys = ("format", "name", "seq", "version", "target", "model", "attachments", "created", "not_after", "min_agent", "key_id", "metrics")
+    keys = ("format", "name", "seq", "version", "target", "model", "chunks", "attachments", "created", "not_after", "min_agent", "key_id", "metrics")
     _closed(d, keys, "manifest")
     if d["format"] != MANIFEST_FORMAT:
         raise ParseError("unknown manifest format")
     _closed(d["model"], ("sha256", "size"), "model")
     _closed(d["attachments"], ("model_card_sha256", "sbom_sha256"), "attachments")
+    _closed(d["chunks"], ("size", "index_sha256"), "chunks")
     m = d["metrics"]
     if not isinstance(m, dict) or len(m) > 16:
         raise ParseError("metrics must be an object of at most 16 entries")
@@ -162,12 +167,19 @@ def parse_manifest(raw: bytes) -> Manifest:
         metrics=dict(m),
         model_card_sha256=_str(d["attachments"], "model_card_sha256", HEX64),
         sbom_sha256=_str(d["attachments"], "sbom_sha256", HEX64),
+        chunk_size=_int(d["chunks"], "size", MIN_CHUNK, MAX_CHUNK),
+        index_sha256=_str(d["chunks"], "index_sha256", HEX64),
     )
 
 
 # ------------------------------------------------------------------------------------------------ signing side
 def sha256(b: bytes) -> str:
     return hashlib.sha256(b).hexdigest()
+
+
+def chunk_index(model: bytes, chunk_size: int) -> bytes:
+    """The model's chunk hashes, concatenated: SHA-256 of each `chunk_size` piece (the last may be shorter)."""
+    return b"".join(hashlib.sha256(model[i : i + chunk_size]).digest() for i in range(0, len(model), chunk_size))
 
 
 def make_bundle(
@@ -184,6 +196,7 @@ def make_bundle(
     not_after: int,
     min_agent: int = 0,
     metrics: dict | None = None,
+    chunk_size: int = DEFAULT_CHUNK,
 ) -> Bundle:
     doc = {
         "format": MANIFEST_FORMAT,
@@ -192,6 +205,7 @@ def make_bundle(
         "version": version,
         "target": target,
         "model": {"sha256": sha256(model), "size": len(model)},
+        "chunks": {"size": chunk_size, "index_sha256": sha256(chunk_index(model, chunk_size))},
         "attachments": {"model_card_sha256": sha256(model_card), "sbom_sha256": sha256(sbom)},
         "created": created,
         "not_after": not_after,
@@ -308,6 +322,8 @@ class Device:
             return Result(False, "attachment_hash", "model card")
         if sha256(b.sbom) != m.sbom_sha256:
             return Result(False, "attachment_hash", "sbom")
+        if sha256(chunk_index(b.model, m.chunk_size)) != m.index_sha256:
+            return Result(False, "chunk_index")
         return OK
 
     def verify(self, b: Bundle, now: int) -> Result:

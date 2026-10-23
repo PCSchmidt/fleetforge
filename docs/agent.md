@@ -7,7 +7,7 @@ A small device-side agent that pulls a signed model over a bad link and swaps it
 - **A/B slots.** The running model's slot is never written. An update goes to the other slot, is verified in full there (the 0.2 checks: signature, target, floor, validity window, size and hashes), and only then does `state.json` mention it, as a *pending trial*.
 - **One authority.** `state.json` holds the active slot, the pending trial, the floors, installed hashes, rejected hashes and the signed keyset. It is replaced only by write-temp, sync, rename, and carries its own checksum.
 - **Trial, then promote.** A pending model runs; the supervisor confirms it healthy (the floor rises and the slot becomes active, the old one `previous`) or reports it unhealthy (dropped, its hash remembered, never retried). A pending model that is not confirmed within 3 boots is dropped the same way, so a model that crashes on start cannot hold the device.
-- **Resumable download.** Progress is a journal of (offset, length, chunk hash) lines, each written only after its chunk was synced. On restart only the journalled prefix whose hashes still match the file is trusted; anything after is truncated. A manifest that changed since the journal was written resets the download.
+- **Chunk-verified, resumable download.** The signed manifest pins a chunk-hash index (milestone 0.6, [delta.md](delta.md)); the device fetches the index, checks it against the pin, and verifies every chunk against it on arrival, so a damaged chunk is asked for again and nothing else is re-sent. Chunks already in the running model are reused, and chunks cross the link lzma-compressed when that is smaller. Progress is a journal of (offset, length, chunk hash) lines, each written only after its chunk was synced; on restart only the journalled prefix whose hashes still match the file is trusted, and a manifest that changed since the journal was written resets the download.
 - **Cheap refusal.** The manifest and signature (a few hundred bytes) are fetched and checked first; a wrong-target, rolled-back, expired or badly signed update is refused before any of the model is downloaded (tested: under 2 KB transferred).
 
 ## The store model
@@ -22,22 +22,24 @@ A small device-side agent that pulls a signed model over a bad link and swaps it
 
 **Control.** An updater that overwrites the running model in place leaves the device with no valid model in **34 of 48** cut runs (71%).
 
-**Mutation testing** (`scripts/mutation_agent.py`, `results/mutation_agent.txt`): 17 injected faults (state not synced or overwritten in place, update written into the running slot, verification skipped, tries not counted, unhealthy model promoted, bad hashes not remembered or not consulted, chunk data unsynced before the journal line, journal checks removed, boot skipping verification, floor never raised, and others); all 17 caught. The first run missed two: an update starting while a trial is pending, and the journal's chunk-hash check; both now have direct tests (the second uses injected bit rot in the partial file).
+**Mutation testing** (`scripts/mutation_agent.py`, `results/mutation_agent.txt`): 22 injected faults (state not synced or overwritten in place, update written into the running slot, verification skipped, tries not counted, unhealthy model promoted, bad hashes not remembered or not consulted, chunk data unsynced before the journal line, journal checks removed, boot skipping verification, floor never raised, received chunks not checked against the signed index, the index not checked against the manifest, a cumulative instead of consecutive failure budget, held chunks never reused, and others); 21 are caught. The survivor is the output limit on decompression: removing it leaves every result the same, because the length check still rejects an oversized chunk afterwards, but memory is no longer bounded; that is a resource property no output-based test can see, and it has a direct test of the decoder instead. Earlier rounds missed three (an update starting while a trial is pending, the journal's chunk-hash check, and the failure budget); each now has a direct test.
 
-**Lossy link** (128 KiB model, 200 devices per row, short reads 20%, one corrupted byte per 100 chunks; a call gives up after 6 failed requests):
+**Lossy link** (128 KiB model, 4 KiB chunks, 200 devices per row, short reads 20%, one corrupted byte per 100 chunk transfers; a call gives up after 6 *consecutive* failed requests; this table was regenerated after the chunk-verification and failure-budget changes, and its figures differ from the first version of this page):
 
 | Request drop rate | With resume: done / calls / bytes sent ÷ size | Without resume: done / calls / bytes sent ÷ size |
 | --- | --- | --- |
-| 0.0 | 100% / 1.6 / 1.53 | 100% / 1.6 / 1.53 |
-| 0.1 | 100% / 1.8 / 1.62 | 100% / 1.7 / 1.71 |
-| 0.3 | 100% / 4.0 / 1.44 | 45% / 26 / 20.0 |
-| 0.5 | 100% / 8.5 / 1.42 | 0% / n/a / 11.5 (in 60 calls) |
+| 0.0 | 100% / 1.1 / 1.18 | 100% / 1.1 / 1.18 |
+| 0.1 | 100% / 1.1 / 1.17 | 100% / 1.1 / 1.17 |
+| 0.3 | 100% / 1.2 / 1.18 | 100% / 1.2 / 1.25 |
+| 0.5 | 100% / 2.3 / 1.20 | 100% / 3.2 / 2.12 |
 
-Resuming is what makes a bad link workable: at a 30% drop rate every device finishes with 1.4 times the model's size transferred, against 45% finishing (after 20 times the size) without it.
+(The 1.18 at zero drops is the short reads: a truncated chunk is thrown away and asked for again, and the discarded bytes count as sent.)
+
+Resuming matters least where the link is good and most where it is bad: at a 50% drop rate a device that resumes finishes after 2.3 calls with 1.2 times the model's size sent, while one that starts over each call sends 2.1 times. (With the earlier total-failure budget, a 30% drop rate left 45% of the starting-over devices unfinished; the consecutive-failure budget removes that, which is why this table is more forgiving than the first version.)
 
 ## What this does not establish
 
-- **A single flipped byte costs a full re-download.** Integrity is checked against the model hash only at the end (the 1.5 times at zero drops comes from the corruption rate, not from drops). The chunk hashes in the journal come from the agent itself, so they catch local damage but not corruption in transit. Putting chunk hashes (a Merkle tree) in the signed manifest would fix this; it needs a new manifest format and is not built. This is also the prerequisite for delta updates (milestone 0.6).
+- **Corruption in transit** was a full re-download in the first version of this agent (integrity was checked only against the whole-model hash); it now costs one chunk, because the signed manifest pins a chunk index (see [delta.md](delta.md)). What is still not protected: a *signed* model that is itself bad (that is the health check and the sequential test's job).
 - **Repeated power loss drops a good model.** Every boot of a pending model counts as a try, so three reboots before the supervisor confirms (several quick power cuts after an update) drop the model and remember its hash. The device stays safe on the old model and a corrected model with a new `seq` is accepted, but the same file will not be retried. The count cannot tell a crash from a power cut.
 - **The simulation is mine.** The file model (volatile until synced, atomic rename) follows POSIX-like behaviour but is not a measurement of any flash or file system; real devices add wear levelling, write reordering across files, directory syncs and hardware faults. The four loss patterns are a sample, not every subset of lost writes.
 - **Corruption of the running model after the fact** (bit rot, a failing flash) is reported as `Bricked` at boot, not repaired; there is no recovery slot or fallback to the previous model.
@@ -47,7 +49,7 @@ Resuming is what makes a bad link workable: at a 30% drop rate every device fini
 
 ```
 pip install numpy cryptography hypothesis pytest
-pytest                                   # 124 tests, about 12 s
+pytest                                   # 168 tests, about 5 minutes
 python scripts/run_agent_eval.py         # about a minute
 python scripts/mutation_agent.py         # about 4 minutes
 ```

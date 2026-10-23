@@ -1,5 +1,6 @@
 import hashlib
 import json
+import math
 
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -174,7 +175,13 @@ def dumps(doc):
     [
         lambda d: d.update(extra=1),
         lambda d: d.pop("seq"),
-        lambda d: d.update(format="fleetforge-manifest/2"),
+        lambda d: d.update(format="fleetforge-manifest/1"),  # the retired format
+        lambda d: d["chunks"].update(size=100),
+        lambda d: d["chunks"].update(size=2**40),
+        lambda d: d["chunks"].update(size=4096.0),
+        lambda d: d["chunks"].update(index_sha256="xyz"),
+        lambda d: d["chunks"].update(extra=1),
+        lambda d: d.pop("chunks"),
         lambda d: d.update(seq=True),
         lambda d: d.update(seq=1.5),
         lambda d: d.update(seq=0),
@@ -227,3 +234,18 @@ def test_commit_never_lowers_the_floor():
 
 def test_signing_is_deterministic_and_keys_are_reproducible():
     assert bundle().manifest == bundle().manifest and bundle().signature == bundle().signature  # Ed25519 is deterministic
+
+
+def test_a_signed_manifest_that_pins_the_wrong_chunk_index_is_refused_at_the_body_check():
+    b = bundle()
+    doc = json.loads(b.manifest)
+    doc["chunks"]["index_sha256"] = A.sha256(b"not the index")
+    r = device().verify(signed(dumps(doc)), NOW)
+    assert not r.ok and r.code == "chunk_index"
+
+
+def test_chunk_index_is_one_hash_per_chunk_with_a_short_last_chunk():
+    idx = A.chunk_index(MODEL, 1000)
+    assert len(idx) == 32 * math.ceil(len(MODEL) / 1000)
+    assert idx[-32:] == hashlib.sha256(MODEL[2000:]).digest()
+    assert A.chunk_index(b"", 1000) == b""

@@ -25,13 +25,14 @@ from __future__ import annotations
 
 import hashlib
 import json
+import lzma
 
 from .artifact import Bundle, Device, ParseError, parse_manifest, sha256
 from .link import LinkError, Server
 from .simfs import SimFS
 
 CHUNK = 4096
-RETRIES = 6
+RETRIES = 6  # consecutive failed requests before an update call gives up (the next call resumes)
 MAX_TRIES = 3
 SLOTS = ("A", "B")
 FILES = ("model", "manifest", "signature", "model_card", "sbom")
@@ -47,6 +48,19 @@ def other(slot: str) -> str:
 
 def slot_path(slot: str, name: str) -> str:
     return f"slots/{slot}/{name}"
+
+
+def _decode(payload: bytes, packed: bool, want: int) -> bytes | None:
+    """A received chunk back to raw bytes, or None if it is not exactly `want` bytes of valid data. Decompression is
+    bounded by `want`, so a hostile payload cannot expand without limit."""
+    if not packed:
+        return payload if len(payload) == want else None
+    d = lzma.LZMADecompressor()
+    try:
+        out = d.decompress(payload, max_length=want + 1)
+    except lzma.LZMAError:
+        return None
+    return out if d.eof and len(out) == want else None
 
 
 class Agent:
@@ -166,6 +180,7 @@ class Agent:
                 if fails > RETRIES:
                     return None
                 continue
+            fails = 0  # the budget is consecutive failures, like a connection that has gone away
             out += chunk
         return out
 
@@ -207,6 +222,11 @@ class Agent:
             self.fs.truncate(mpath, good_end)
         return good_end
 
+    def _local_chunks(self, slot: str, size: int) -> dict[bytes, bytes]:
+        """hash -> bytes of each chunk of the running model, for reuse. Empty if the model is unreadable."""
+        data = self.fs.read(slot_path(slot, "model")) or b""
+        return {hashlib.sha256(data[i : i + size]).digest(): data[i : i + size] for i in range(0, len(data), size)}
+
     def update(self, server: Server, now: int) -> str:
         """Fetch and stage the server's current bundle if it is acceptable. Idempotent and resumable."""
         st = self._load()
@@ -224,28 +244,49 @@ class Agent:
             return "rejected:bad_model"
         if st["installed"].get(m.name) == m.model_sha256:
             return "up_to_date"
+        index = self._fetch_small(server, "index")
+        if index is None:
+            return "link_down"
+        n_chunks = -(-m.model_size // m.chunk_size)
+        if len(index) != 32 * n_chunks or sha256(index) != m.index_sha256:
+            return "rejected:chunk_index"  # the signed manifest pins the index, so a wrong one is not the model's
         slot = other(st["active"])
         head = b"M " + sha256(manifest).encode() + b"\n"
         off = self._resume_point(slot, head)
         mpath, jpath = slot_path(slot, "model.part"), slot_path(slot, "journal")
+        have = self._local_chunks(st["active"], m.chunk_size)  # chunks the running model already holds
+        self.stats = {"fetched": 0, "reused": 0, "bad_chunks": 0}
         fails = 0
         while off < m.model_size:
-            want = min(CHUNK, m.model_size - off)
-            try:
-                chunk = server.read("model", off, want)
-            except LinkError:
-                chunk = b""
-            if not chunk:
-                fails += 1
-                if fails > RETRIES:
-                    return "link_down"
-                continue
-            chunk = chunk[:want]
-            self.fs.write(mpath, off, chunk)
+            i = off // m.chunk_size
+            want = min(m.chunk_size, m.model_size - off)
+            leaf = index[32 * i : 32 * i + 32]
+            held = have.get(leaf)
+            if held is not None:
+                data = held  # copied from the running model, nothing crosses the link
+                self.stats["reused"] += 1
+            else:
+                try:
+                    payload, packed = server.read_chunk(i)
+                except LinkError:
+                    fails += 1
+                    if fails > RETRIES:
+                        return "link_down"
+                    continue
+                data = _decode(payload, packed, want)
+                if data is None or hashlib.sha256(data).digest() != leaf:
+                    self.stats["bad_chunks"] += 1  # damaged in transit: only this chunk is asked for again
+                    fails += 1
+                    if fails > RETRIES:
+                        return "link_down"
+                    continue
+                self.stats["fetched"] += 1
+                fails = 0  # consecutive failures, not a total: a long download on a flaky link keeps making progress
+            self.fs.write(mpath, off, data)
             self.fs.sync(mpath)
-            self.fs.write(jpath, self.fs.size(jpath), f"{off} {len(chunk)} {sha256(chunk)}\n".encode())
+            self.fs.write(jpath, self.fs.size(jpath), f"{off} {len(data)} {sha256(data)}\n".encode())
             self.fs.sync(jpath)
-            off += len(chunk)
+            off += len(data)
         card, sbom = self._fetch_small(server, "model_card"), self._fetch_small(server, "sbom")
         if card is None or sbom is None:
             return "link_down"

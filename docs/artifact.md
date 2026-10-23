@@ -8,7 +8,7 @@ A bundle is five byte strings:
 
 | Part | What it is |
 | --- | --- |
-| manifest | JSON: format, model name, `seq`, human version, target, model SHA-256 and size, hashes of the two attachments, `created`, `not_after`, minimum agent version, signing key id, a few reported metrics |
+| manifest | JSON: format, model name, `seq`, human version, target, model SHA-256 and size, a chunk size and the SHA-256 of the model's chunk-hash index (format version 2; see [delta.md](delta.md)), hashes of the two attachments, `created`, `not_after`, minimum agent version, signing key id, a few reported metrics |
 | signature | Ed25519 over `b"fleetforge/manifest/v1\0" + manifest bytes`, exactly as shipped |
 | model | the model file |
 | model card, SBOM | attachments whose SHA-256 the manifest pins (the SBOM here is whatever bytes the build supplies; no SBOM generation is built) |
@@ -19,13 +19,13 @@ This is TUF-inspired and much smaller than TUF: one signing role under one root,
 
 ## What the device does, in order
 
-Size cap, strict parse (closed field set, exact types, duplicate JSON keys and NaN rejected), key lookup, key expiry, signature over the exact received bytes (nothing is re-serialised), target, rollback floor, validity window (with 300 s of clock skew allowed for `created`), minimum agent version, model size and SHA-256, attachment hashes. The first failure is reported as a code: `manifest_malformed`, `unknown_key`, `key_expired`, `bad_signature`, `wrong_target`, `rollback`, `expired`, `not_yet_valid`, `agent_too_old`, `model_size`, `model_hash`, `attachment_hash`; keyset updates add `keyset_bad_signature`, `keyset_malformed`, `keyset_rollback`.
+Size cap, strict parse (closed field set, exact types, duplicate JSON keys and NaN rejected), key lookup, key expiry, signature over the exact received bytes (nothing is re-serialised), target, rollback floor, validity window (with 300 s of clock skew allowed for `created`), minimum agent version, model size and SHA-256, attachment hashes. The first failure is reported as a code: `manifest_malformed`, `unknown_key`, `key_expired`, `bad_signature`, `wrong_target`, `rollback`, `expired`, `not_yet_valid`, `agent_too_old`, `model_size`, `model_hash`, `attachment_hash`, `chunk_index`; keyset updates add `keyset_bad_signature`, `keyset_malformed`, `keyset_rollback`.
 
 `verify` changes no state. `commit` raises the floor (never lowers it) and is to be called only after a successful install. A second artifact with the same `seq` is accepted only if it is the same model (a harmless reinstall). To roll back a bad model you do not install the old file: you re-sign the old model with a **higher** `seq`, so the floor never goes down.
 
 ## What has been tested
 
-All in `tests/test_artifact.py` and `tests/test_artifact_props.py` (60 tests, a few seconds):
+All in `tests/test_artifact.py` and `tests/test_artifact_props.py` (50 tests, a few seconds):
 
 - **Every bit.** Flipping each single bit of the manifest, the signature, the model, the model card and the SBOM is rejected: all of them, not a sample (3,912 manifest bits, 16,384 model bits, 512 signature bits, 104 and 136 for the attachments).
 - **Signature and key attacks.** Truncated, extended, empty and all-zero signatures; an artifact signed by the wrong key under a trusted id; an unknown key id; an expired key; revocation through a newer keyset; a keyset signed by someone else, tampered, repeated, rolled back, or with duplicate ids; a signature made without the domain prefix or with the keyset's prefix.

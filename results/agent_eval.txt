@@ -17,9 +17,9 @@ An update call gives up after 6 failed requests and the next call resumes (or, i
 
    drop |                 with resume                  |                without resume               
         |   done  calls  bytes sent / size verify fails |   done  calls  bytes sent / size verify fails
-    0.0 |   100%    1.6               1.53         0.53 |   100%    1.6               1.53         0.53
-    0.1 |   100%    1.8               1.62         0.61 |   100%    1.7               1.71         0.56
-    0.3 |   100%    4.0               1.44         0.42 |    45%   26.0              20.02         0.17
-    0.5 |   100%    8.5               1.42         0.39 |     0%    0.0              11.48         0.00
+    0.0 |   100%    1.1               1.18         0.02 |   100%    1.1               1.18         0.02
+    0.1 |   100%    1.1               1.17         0.01 |   100%    1.1               1.17         0.01
+    0.3 |   100%    1.2               1.18         0.02 |   100%    1.2               1.25         0.02
+    0.5 |   100%    2.3               1.20         0.03 |   100%    3.2               2.12         0.04
 
-Total time 68 s
+Total time 1271 s

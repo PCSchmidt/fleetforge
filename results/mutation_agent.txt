@@ -15,5 +15,10 @@ killed    update runs while a trial is pending
 killed    already-installed model re-downloaded
 killed    active slot not verified at boot
 killed    floor never raised on promotion
+killed    received chunks not checked against the signed index
+killed    chunk index not checked against the manifest
+killed    failure budget is cumulative, not consecutive
+killed    held chunks never reused
+SURVIVED  decompression not bounded (a resource property: the length check still rejects the result)
 
-17/17 mutants killed
+21/22 mutants killed

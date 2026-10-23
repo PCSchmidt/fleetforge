@@ -78,7 +78,7 @@ Both were found by checking healthy candidates against the stated error levels, 
 
 ```
 pip install numpy cryptography hypothesis pytest
-pytest                                         # 152 tests, about 5 minutes
+pytest                                         # 168 tests, about 5 minutes
 python scripts/run_fleet_eval.py 400           # about an hour
 python scripts/run_fleet_real_eval.py 10       # about 20 seconds
 ```

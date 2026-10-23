@@ -49,11 +49,15 @@ class World:
         return Server(self.b2)
 
 
-def make_world(model_size: int = 6 * AG.CHUNK + 100) -> World:
+def make_world(model_size: int = 6 * AG.CHUNK + 100, reuse: float = 0.0) -> World:
+    """`reuse` is the fraction of the new model's chunks that are identical to the factory model's (from the start)."""
     root, signer = _key("root"), _key("signer")
     keyset = make_keyset(root, 1, [("k1", public_bytes(signer), NOW + 10**6)])
-    mk = lambda seq, seed: make_bundle(signer, "k1", NAME, seq, f"1.{seq}", TARGET, _blob(seed, model_size), b"card", b"{}", NOW - 100, NOW + 10**5)  # noqa: E731
-    b1, b2 = mk(1, 1), mk(2, 2)
+    old, new = _blob(1, model_size), _blob(2, model_size)
+    keep = int(reuse * model_size) // AG.CHUNK * AG.CHUNK
+    new = old[:keep] + new[keep:]
+    mk = lambda seq, model: make_bundle(signer, "k1", NAME, seq, f"1.{seq}", TARGET, model, b"card", b"{}", NOW - 100, NOW + 10**5)  # noqa: E731
+    b1, b2 = mk(1, old), mk(2, new)
     w = World(public_bytes(root), keyset, b1, b2)
     w.h1, w.h2 = parse_manifest(b1.manifest).model_sha256, parse_manifest(b2.manifest).model_sha256
     fs = SimFS()

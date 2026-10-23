@@ -133,13 +133,29 @@ def test_unacceptable_updates_are_refused_before_the_model_is_downloaded():
         assert server.bytes_sent < 2000, want  # the model was never fetched
 
 
-def test_a_model_whose_bytes_do_not_match_the_signed_hash_is_discarded():
+def test_a_tampered_model_is_caught_at_the_signed_chunk_index_before_any_of_it_is_fetched():
     bad = type(W.b2)(W.b2.manifest, W.b2.signature, bytes([W.b2.model[0] ^ 1]) + W.b2.model[1:], W.b2.model_card, W.b2.sbom)
     fs = fresh()
-    assert agent(fs).update(Server(bad), S.NOW).startswith("verify_failed:model_hash")
-    st = agent(fs)._load()
-    assert st["pending"] is None and st["active"] == "A"
+    server = Server(bad)
+    assert agent(fs).update(server, S.NOW) == "rejected:chunk_index"
+    assert server.bytes_sent < 3000  # manifest, signature and index only
+    assert agent(fs)._load()["pending"] is None
     assert agent(fs).update(W.server(), S.NOW) == "pending"  # a good copy afterwards works
+
+
+def test_a_server_with_the_right_index_but_bad_chunks_never_gets_a_model_staged():
+    class Liar(Server):
+        def read_chunk(self, i, compress=True):
+            payload, packed = super().read_chunk(i, compress)
+            if i == 2:
+                payload = payload[:-1] + bytes([payload[-1] ^ 1])  # always damaged, so retrying cannot help
+            return payload, packed
+
+    fs = fresh()
+    a = agent(fs)
+    assert a.update(Liar(W.b2), S.NOW) == "link_down"
+    assert a.stats["bad_chunks"] > 0 and agent(fs)._load()["pending"] is None
+    assert agent(fs).update(W.server(), S.NOW) == "pending"  # resumes from the good prefix with an honest server
 
 
 def test_a_new_server_bundle_mid_download_restarts_cleanly():
@@ -184,8 +200,8 @@ def test_flaky_links_end_in_success_or_a_clean_retryable_state(seed):
     server = Server(W.b2, random.Random(seed), p_drop=0.3, p_short=0.3, p_corrupt=0.03)
     for _ in range(80):
         res = agent(fs).update(server, S.NOW)
-        # a byte flipped in the small manifest or signature in transit is refused and retried, never blacklisted
-        assert res in ("pending", "link_down", "rejected:manifest_malformed", "rejected:bad_signature") or res.startswith("verify_failed:"), res
+        # a byte flipped in the small manifest, signature or chunk index in transit is refused and retried, never blacklisted
+        assert res in ("pending", "link_down", "rejected:manifest_malformed", "rejected:bad_signature", "rejected:chunk_index") or res.startswith("verify_failed:"), res
         assert agent(fs)._load()["bad"] == []
         assert not S.invariants(fs, W)
         if res == "pending":
@@ -283,3 +299,87 @@ def test_bit_rot_in_the_partial_download_is_found_by_the_journal_and_only_that_p
     s2 = W.server()
     assert agent(fs).update(s2, S.NOW) == "pending"  # first call, no full restart needed
     assert s2.bytes_sent < len(W.b2.model)
+
+
+# ---------------------------------------------------------------------------------------------- chunks: reuse, compression, damage
+def test_only_the_chunks_that_changed_are_fetched():
+    w = S.make_world(8 * AG.CHUNK, reuse=0.75)  # the first 6 of 8 chunks are the running model's
+    fs = S.clone(w.base)
+    server = w.server()
+    a = Agent(fs, w.root_pub, S.TARGET)
+    assert a.update(server, S.NOW) == "pending"
+    assert a.stats == {"fetched": 2, "reused": 6, "bad_chunks": 0}
+    assert server.bytes_sent < 2.5 * AG.CHUNK + 3000  # two chunks (random bytes do not compress) plus the small parts
+    b = Agent(fs, w.root_pub, S.TARGET)
+    assert b.boot() == "B"
+    b.confirm(True)
+    assert b._load()["floor"]["detector"] == 2
+
+
+def test_a_compressible_model_costs_less_than_its_size_on_the_wire():
+    zeros = make_bundle(S._key("signer"), "k1", S.NAME, 3, "v3", S.TARGET, (b"weights" * 600)[: 8 * AG.CHUNK], b"card", b"{}", S.NOW - 10, S.NOW + 10**5)
+    fs = fresh()
+    server = Server(zeros)
+    assert agent(fs).update(server, S.NOW) == "pending"
+    assert server.bytes_sent < 0.2 * len(zeros.model) + 3000
+    assert agent(fs).audit()["state"]["pending"]["seq"] == 3
+
+
+def test_incompressible_chunks_are_sent_raw_not_inflated():
+    s = W.server()
+    payload, packed = s.read_chunk(0)
+    assert not packed and len(payload) == AG.CHUNK
+
+
+def test_a_decompression_bomb_is_refused_without_expanding():
+    import lzma
+
+    bomb = lzma.compress(bytes(50_000_000), preset=9)
+    assert len(bomb) < 100_000
+    assert AG._decode(bomb, True, AG.CHUNK) is None  # claims to be one chunk, would expand to 50 MB
+    good = lzma.compress(b"x" * AG.CHUNK)
+    assert AG._decode(good, True, AG.CHUNK) == b"x" * AG.CHUNK
+    assert AG._decode(good[:-3], True, AG.CHUNK) is None  # truncated stream
+    assert AG._decode(good, True, AG.CHUNK - 1) is None  # wrong length for this chunk
+    assert AG._decode(b"abc", False, 4) is None and AG._decode(b"abcd", False, 4) == b"abcd"
+
+
+def test_one_damaged_chunk_costs_one_chunk_not_the_whole_download():
+    class OnceBad(Server):
+        def __init__(self, *a, **k):
+            super().__init__(*a, **k)
+            self.hit = False
+
+        def read_chunk(self, i, compress=True):
+            payload, packed = super().read_chunk(i, compress)
+            if i == 3 and not self.hit:
+                self.hit = True
+                payload = bytes([payload[0] ^ 1]) + payload[1:]
+            return payload, packed
+
+    fs = fresh()
+    server = OnceBad(W.b2)
+    a = agent(fs)
+    assert a.update(server, S.NOW) == "pending"  # first call, no restart
+    n = -(-len(W.b2.model) // AG.CHUNK)
+    assert a.stats["bad_chunks"] == 1 and a.stats["fetched"] == n
+    assert server.bytes_sent < len(W.b2.model) + 2 * AG.CHUNK + 3000  # one chunk re-sent, not the model
+
+
+def test_power_cuts_with_chunk_reuse_still_leave_a_valid_model():
+    w = S.make_world(reuse=0.5)
+    r = S.single_cut_sweep(w, "good")
+    assert r.runs >= 4 * r.ops and not r.failures, r.failures[:3]
+
+
+def test_a_long_download_on_a_flaky_link_is_not_cut_short_by_a_total_failure_budget():
+    w = S.make_world(200 * AG.CHUNK)  # 200 chunks, so a 20% drop rate means about 40 failed requests in all
+    fs = S.clone(w.base)
+    server = Server(w.b2, random.Random(5), p_drop=0.2)
+    calls = 0
+    while True:
+        calls += 1
+        res = Agent(fs, w.root_pub, S.TARGET).update(server, S.NOW)
+        if res == "pending" or calls > 10:
+            break
+    assert res == "pending" and calls <= 2  # six *consecutive* failures are unlikely at a 20% drop rate

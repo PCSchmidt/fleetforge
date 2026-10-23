@@ -1,0 +1,11 @@
+pair                                                                        size  lzma full  fixed 4K  fixed 64K  content ~4K  xor+lzma
+trained checkpoint, seed 0 -> seed 1 (retrained)                         5486810        88%       97%       100%          98%       86%
+trained checkpoint, seed 1 -> seed 2 (retrained)                         5486810        88%       97%       100%          98%       86%
+ONNX INT8, min-max calibration -> entropy calibration (same weights)    10672449        84%        0%         1%           0%        0%
+ONNX INT8, calibration set 0 -> set 1 (same weights, same method)       10672456        84%        0%         1%           0%        0%
+ONNX FP16 build -> INT8 build (same weights)                            10672449        84%        0%         1%           0%        0%
+TensorRT INT8 engine, min-max -> entropy (same weights)                  5117132        55%      100%       100%          66%       80%
+TensorRT engine, FP16 -> INT8 (same weights)                             5148988        53%      100%       100%         100%       83%
+TensorRT INT8 engine, seed 1 -> seed 2 (retrained)                       5127308        54%      100%       100%          90%       82%
+
+columns after 'size' are bytes that would still have to be sent, as a percentage of the new file's size

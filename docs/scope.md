@@ -15,7 +15,7 @@ How quickly and how safely can a fleet adopt a new model, and how few frames doe
 | 0.3 (done, see agent.md) | Device agent: pull-based updates over a link that drops and truncates, A/B model slots, resume, and a cut-at-every-step test as in IronBoot | Laptop | Exhaustive interruption sweep with no state where the device has no valid model |
 | 0.4 (done in simulation, see fleet.md) | Control plane and fleet simulation: groups, canary percentages, rollback triggers, many emulated devices in containers | Docker | Rollout and rollback timings measured on a few hundred emulated devices |
 | 0.5 | Real targets: build a model for the desktop GPU (TensorRT) with an accuracy-regression gate; then Jetson and a microcontroller artifact | Jetson, Pico 2 | Same pipeline produces and rolls out artifacts for at least two real device types |
-| 0.6 | Delta updates: bytes saved against full shipping | Laptop | Table of bytes per update, full vs delta, on real model pairs |
+| 0.6 (partly done: chunk index, reuse, compression; see delta.md) | Delta updates: bytes saved against full shipping | Laptop | Table of bytes per update, full vs delta, on real model pairs |
 
 Order puts the statistics (0.1) first because it is the deep-dive and needs nothing else.
 

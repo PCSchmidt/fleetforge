@@ -21,7 +21,7 @@ MUTANTS = [
     ("rolled-back model not remembered", '        st["bad"].append(p["hash"])\n        st["pending"] = None\n        self._save(st)\n        return "rolled_back"', '        st["pending"] = None\n        self._save(st)\n        return "rolled_back"'),
     ("rejected hashes not consulted", 'if m.model_sha256 in st["bad"]:', "if False:"),
     ("unhealthy model promoted", "        if healthy:", "        if True:"),
-    ("chunk data not synced before the journal line", "            self.fs.write(mpath, off, chunk)\n            self.fs.sync(mpath)\n", "            self.fs.write(mpath, off, chunk)\n"),
+    ("chunk data not synced before the journal line", "            self.fs.write(mpath, off, data)\n            self.fs.sync(mpath)\n", "            self.fs.write(mpath, off, data)\n"),
     ("journal chunk hashes not checked on resume", " or sha256(part[off : off + ln]) != h:", ":"),
     ("journal not tied to the manifest", "if j is None or not j.startswith(head) or not self.resume:", "if j is None or not self.resume:"),
     ("pending slot not verified at boot", 'elif not self._slot_ok(d, p["slot"]):', "elif False:"),
@@ -29,6 +29,11 @@ MUTANTS = [
     ("already-installed model re-downloaded", '        if st["installed"].get(m.name) == m.model_sha256:\n            return "up_to_date"\n', ""),
     ("active slot not verified at boot", "if running == st[\"active\"] and not self._slot_ok(d, running):", "if False:"),
     ("floor never raised on promotion", '            st["floor"][p["name"]] = max(st["floor"].get(p["name"], 0), p["seq"])\n', ""),
+    ("received chunks not checked against the signed index", "if data is None or hashlib.sha256(data).digest() != leaf:", "if data is None:"),
+    ("chunk index not checked against the manifest", "if len(index) != 32 * n_chunks or sha256(index) != m.index_sha256:", "if False:"),
+    ("failure budget is cumulative, not consecutive", "                fails = 0  # consecutive failures, not a total: a long download on a flaky link keeps making progress\n", ""),
+    ("held chunks never reused", "held = have.get(leaf)", "held = None"),
+    ("decompression not bounded (a resource property: the length check still rejects the result)", "out = d.decompress(payload, max_length=want + 1)", "out = d.decompress(payload)"),
 ]
 
 
