@@ -42,10 +42,15 @@ class StreamParams:
             raise ValueError("|delta| cannot exceed the disagreement rate q")
 
 
-def simulate(params: StreamParams, reps: int, frames: int, rng: np.random.Generator) -> np.ndarray:
-    """Return an int8 array (reps, frames) of d_t in {-1, 0, +1}."""
+def simulate(params: StreamParams, reps: int, frames: int, rng: np.random.Generator, delta_rep: np.ndarray | None = None) -> np.ndarray:
+    """Return an int8 array (reps, frames) of d_t in {-1, 0, +1}.
+
+    `delta_rep`, if given, is each replication's own true gain (shape (reps,)) in place of `params.delta`; the fleet
+    simulation uses it to give every device its own gain.
+    """
     q = params.q
-    delta_t = np.full((reps, frames), params.delta, dtype=np.float32)
+    base = params.delta if delta_rep is None else np.asarray(delta_rep, dtype=np.float32)[:, None]
+    delta_t = np.broadcast_to(np.asarray(base, dtype=np.float32), (reps, frames)).copy()
     if params.sigma_z > 0:
         rho = np.exp(-1.0 / params.tau)
         innov_sd = params.sigma_z * np.sqrt(1.0 - rho * rho)

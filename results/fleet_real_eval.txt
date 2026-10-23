@@ -1,0 +1,27 @@
+Staged e-process rollout to 300 devices, 10 fleets per candidate. 'real' = a real update agent, store and lossy link on every device;
+'abstract' = the Monte Carlo device model, on the same simulated measurements (same seeds). Minutes of simulated time, medians.
+
+  better (+2 points)
+    rolled back: real 0/10, abstract 0/10
+    minutes to rollback decision: real    n/a, abstract    n/a
+    minutes until every device is back on production: real    n/a, abstract    n/a
+    minutes to 100% when promoted: real    202, abstract    227
+    devices that served the candidate: real    300, abstract    300
+    update calls per device: 2.38; model data sent per fleet: 42.6 MB
+  worse (-3 points)
+    rolled back: real 10/10, abstract 10/10
+    minutes to rollback decision: real     92, abstract     97
+    minutes until every device is back on production: real     97, abstract    102
+    minutes to 100% when promoted: real    n/a, abstract    n/a
+    devices that served the candidate: real     30, abstract     30
+    update calls per device: 0.25; model data sent per fleet: 4.2 MB
+  crashes on 40% of devices
+    rolled back: real 10/10, abstract 10/10
+    minutes to rollback decision: real     56, abstract     77
+    minutes until every device is back on production: real     60, abstract     82
+    minutes to 100% when promoted: real    n/a, abstract    n/a
+    devices that served the candidate: real     16, abstract     24
+    update calls per device: 0.14; model data sent per fleet: 2.4 MB
+
+Per-device checks at the end of every run (active model verifies, nobody left in a trial, floor matches what the device ended on, crashes remembered): 0 violations over 9000 device-runs.
+Total time 15 s

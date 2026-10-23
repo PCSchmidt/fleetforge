@@ -1,0 +1,42 @@
+Rollout of a candidate model to 300 simulated devices, 400 fleets per row; same fleets for every policy.
+Devices poll every 5 min; a trial lasts 30 min; device-to-device spread of the true gain 0.02; link drop rates 0.05-0.4; healthy-model crash rate 0.005.
+Staged e-process: cohorts 5, 25, 100, rest; harm level 5%. Fixed canary: 5 devices, roll back if their mean report < -0.01 or 2 crash.
+'device-hours on it' for a promoted candidate counts to a 24 h horizon. Gain is in accuracy points / 100 (0.02 = +2 points).
+
+  better (+2 points)
+    staged e-process           rolled back   0.0% [ 0.0,  1.0]   minutes to rollback decision    n/a, all devices back    n/a   minutes to 100% when promoted    230   devices that served it  300.0   device-hours on it   6430.1   model data sent   7.3 GB
+    all at once, e-process     rolled back   0.0% [ 0.0,  1.0]   minutes to rollback decision    n/a, all devices back    n/a   minutes to 100% when promoted     63   devices that served it  300.0   device-hours on it   7111.4   model data sent   7.3 GB
+    fixed canary rule          rolled back   0.0% [ 0.0,  1.0]   minutes to rollback decision    n/a, all devices back    n/a   minutes to 100% when promoted    111   devices that served it  300.0   device-hours on it   6847.5   model data sent   7.3 GB
+
+  equal (0)
+    staged e-process           rolled back   0.8% [ 0.3,  2.2]   minutes to rollback decision    214, all devices back    219   minutes to 100% when promoted    231   devices that served it  300.0   device-hours on it   6384.1   model data sent   7.3 GB
+    all at once, e-process     rolled back   1.8% [ 0.9,  3.6]   minutes to rollback decision     48, all devices back     53   minutes to 100% when promoted     63   devices that served it  299.9   device-hours on it   6989.8   model data sent   7.3 GB
+    fixed canary rule          rolled back  13.0% [10.1, 16.7]   minutes to rollback decision     51, all devices back     55   minutes to 100% when promoted    111   devices that served it  261.6   device-hours on it   5956.7   model data sent   6.4 GB
+
+  slightly worse (-1 point)
+    staged e-process           rolled back 100.0% [99.0,100.0]   minutes to rollback decision    150, all devices back    155   minutes to 100% when promoted    n/a   devices that served it  118.8   device-hours on it     83.7   model data sent   2.9 GB
+    all at once, e-process     rolled back 100.0% [99.0,100.0]   minutes to rollback decision     40, all devices back     45   minutes to 100% when promoted    n/a   devices that served it  290.5   device-hours on it    124.7   model data sent   7.1 GB
+    fixed canary rule          rolled back  46.5% [41.7, 51.4]   minutes to rollback decision     53, all devices back     57   minutes to 100% when promoted    112   devices that served it  162.8   device-hours on it   3663.3   model data sent   4.0 GB
+
+  worse (-3 points)
+    staged e-process           rolled back 100.0% [99.0,100.0]   minutes to rollback decision     99, all devices back    103   minutes to 100% when promoted    n/a   devices that served it   29.6   device-hours on it     19.5   model data sent   0.7 GB
+    all at once, e-process     rolled back 100.0% [99.0,100.0]   minutes to rollback decision     37, all devices back     42   minutes to 100% when promoted    n/a   devices that served it  284.7   device-hours on it    108.2   model data sent   7.0 GB
+    fixed canary rule          rolled back  98.0% [96.1, 99.0]   minutes to rollback decision     53, all devices back     57   minutes to 100% when promoted    115   devices that served it   10.9   device-hours on it    139.7   model data sent   0.3 GB
+
+  crashes on 40% of devices
+    staged e-process           rolled back 100.0% [99.0,100.0]   minutes to rollback decision     57, all devices back     61   minutes to 100% when promoted    n/a   devices that served it   13.4   device-hours on it      5.0   model data sent   0.3 GB
+    all at once, e-process     rolled back 100.0% [99.0,100.0]   minutes to rollback decision     13, all devices back     18   minutes to 100% when promoted    n/a   devices that served it  111.6   device-hours on it     13.4   model data sent   2.7 GB
+    fixed canary rule          rolled back  66.5% [61.7, 70.9]   minutes to rollback decision     38, all devices back     42   minutes to 100% when promoted    110   devices that served it  103.7   device-hours on it   2298.0   model data sent   2.5 GB
+
+Sensitivity of the staged e-process to the device-to-device spread of the true gain and to the clipping bound c (equal and worse candidates).
+  sigma_dev 0.00, c 0.05: equal candidate rolled back  0.2% [0.0, 1.4] (target <= 5%); -1 point caught 100.0%; -3 points caught 100.0% (median devices exposed 29)
+  sigma_dev 0.00, c 0.10: equal candidate rolled back  0.0% [0.0, 1.0] (target <= 5%); -1 point caught 100.0%; -3 points caught 100.0% (median devices exposed 30)
+  sigma_dev 0.00, c 0.20: equal candidate rolled back  0.0% [0.0, 1.0] (target <= 5%); -1 point caught 100.0%; -3 points caught 100.0% (median devices exposed 30)
+  sigma_dev 0.02, c 0.05: equal candidate rolled back  2.2% [1.2, 4.2] (target <= 5%); -1 point caught 100.0%; -3 points caught 100.0% (median devices exposed 29)
+  sigma_dev 0.02, c 0.10: equal candidate rolled back  1.5% [0.7, 3.2] (target <= 5%); -1 point caught 100.0%; -3 points caught 100.0% (median devices exposed 30)
+  sigma_dev 0.02, c 0.20: equal candidate rolled back  0.8% [0.3, 2.2] (target <= 5%); -1 point caught 100.0%; -3 points caught 100.0% (median devices exposed 30)
+  sigma_dev 0.04, c 0.05: equal candidate rolled back  3.8% [2.3, 6.1] (target <= 5%); -1 point caught  80.5%; -3 points caught 100.0% (median devices exposed 30)
+  sigma_dev 0.04, c 0.10: equal candidate rolled back  2.5% [1.4, 4.5] (target <= 5%); -1 point caught  88.5%; -3 points caught 100.0% (median devices exposed 30)
+  sigma_dev 0.04, c 0.20: equal candidate rolled back  2.0% [1.0, 3.9] (target <= 5%); -1 point caught  92.2%; -3 points caught 100.0% (median devices exposed 65)
+
+Total time 3918 s

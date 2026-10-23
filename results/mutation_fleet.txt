@@ -1,0 +1,14 @@
+killed    harm bet has the wrong sign
+killed    harm alarm threshold halved
+killed    harm alarm never raised
+killed    crash alarm never raised
+killed    crash test ignores exposure time
+killed    stages open without waiting for reports
+killed    promote after the first stage
+killed    canary threshold sign flipped
+killed    fixed canary rolls out before the canary reports
+killed    everyone in one stage for the staged policy
+killed    devices not drawn at random
+killed    alarm leaves devices serving (no rollback time)
+
+12/12 mutants killed
